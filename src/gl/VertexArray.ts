@@ -1,4 +1,4 @@
-import { VertexBufferLayout, getGLType, getSizeOfType } from "./VertexBufferLayout";
+import { VertexBufferLayout, getGLType } from "./VertexBufferLayout";
 
 
 

@@ -7,7 +7,6 @@ import { Object3D } from "./Object3D";
 import { GeometryConfig } from "./types/geometry-config.type";
 import { MaterialConfig } from "./types/material-config.type";
 import { BasicMaterial } from "./materials/BasicMaterial";
-import { v3 } from "../math/v3";
 import { TextureMaterial } from "./materials/TextureMaterial";
 
 function makeDefaultCamera(): Camera {
