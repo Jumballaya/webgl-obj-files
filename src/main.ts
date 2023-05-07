@@ -8,6 +8,7 @@ import { World } from './core/World';
 import { Geometry } from './core/Geometry';
 import { loadImage } from './utils';
 
+const BASE = import.meta.env.BASE_URL;
 
 const aspect = window.innerWidth / window.innerHeight;
 let fov = 60 * Math.PI / 180;
@@ -17,7 +18,7 @@ const camera = new Camera(fov, aspect, near, far, [0, 1, 0]);
 camera.translation = [0, 2, -10];
 
 const createSuzanneGeometry = async (world: World): Promise<Geometry> => {
-    const obj = await loadObjFile('/models/chair/Chair.obj');
+    const obj = await loadObjFile(`${BASE}models/chair/Chair.obj`);
     const geometry = world.createGeometry({
         position: {
             count: 3,
@@ -40,7 +41,7 @@ const createSuzanneGeometry = async (world: World): Promise<Geometry> => {
 }
 
 const createTeapotGeometry = async (world: World): Promise<Geometry> => {
-    const obj = await loadObjFile('/models/suzanne.obj');
+    const obj = await loadObjFile(`${BASE}models/suzanne.obj`);
 
     const geometry = world.createGeometry({
         position: {
@@ -67,7 +68,7 @@ const createTeapotGeometry = async (world: World): Promise<Geometry> => {
 async function main() {
     const world = new World().setCamera(camera);
 
-    const image = await loadImage('/textures/checker.jpg');
+    const image = await loadImage(`${BASE}textures/checker.jpg`);
     const suzanneMaterial = world.createTextureMaterial(image);
     const teapotMaterial = world.createBasicMaterial({ color: [1, 0.3, 0.7, 1.0] });
     const teapotGeometry = await createTeapotGeometry(world);
