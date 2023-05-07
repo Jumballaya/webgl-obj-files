@@ -45,6 +45,8 @@ export class World {
         }
         this.ctx = ctx;
         this.camera = makeDefaultCamera();
+
+        window.addEventListener('resize', this.resizeCanvas.bind(this));
     }
 
     public render(loop: (dt: number, objects: Object3D[]) => void) {
@@ -151,5 +153,12 @@ export class World {
             // Draw object
             gl.drawArrays(gl.TRIANGLES, 0, obj.geometry.triangleCount);
         }
+    }
+
+    private resizeCanvas() {
+        const [h, w] = [window.innerHeight, window.innerWidth]
+        this.ctx.canvas.width = w;
+        this.ctx.canvas.height = h;
+        this.camera.aspect = w / h;
     }
 }
