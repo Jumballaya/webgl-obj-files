@@ -8,6 +8,7 @@ import { GeometryConfig } from "./types/geometry-config.type";
 import { MaterialConfig } from "./types/material-config.type";
 import { BasicMaterial } from "./materials/BasicMaterial";
 import { v3 } from "../math/v3";
+import { TextureMaterial } from "./materials/TextureMaterial";
 
 function makeDefaultCamera(): Camera {
     const defaultFov = 75 * Math.PI / 180;
@@ -72,6 +73,12 @@ export class World {
 
     public createBasicMaterial(config?: { color?: Vec4; }): Material {
         const mat = new BasicMaterial(config);
+        mat.compile(this.ctx);
+        return mat;
+    }
+
+    public createTextureMaterial(texture: HTMLImageElement): Material {
+        const mat = new TextureMaterial(texture);
         mat.compile(this.ctx);
         return mat;
     }

@@ -32,7 +32,7 @@ export class BasicMaterial extends Material {
 
                 u_ambient_light_color: {
                     type: 'vec4',
-                    value: [1, 1, 1, 1],
+                    value: [0.3, 0.3, 0.3, 1],
                 },
                 u_ambient_light_intensity: {
                     type: 'float',
@@ -44,7 +44,7 @@ export class BasicMaterial extends Material {
                 },
                 u_directional_light_color: {
                     type: 'vec4',
-                    value: [1, 1, 1, 1],
+                    value: [0.3, 0.3, 0.3, 1],
                 },
                 u_albedo: {
                     type: 'vec4',

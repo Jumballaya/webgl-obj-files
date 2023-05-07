@@ -18,7 +18,7 @@ void main() {
     vec3 normal = normalize(v_normal);
 
     // Directional Light
-    float direction_light_intensity = dot(normal, u_reverse_directional_light_direction);
+    float direction_light_intensity = dot(normal, u_reverse_directional_light_direction) * 0.75;
      
     // Point Light
 

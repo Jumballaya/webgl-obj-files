@@ -6,6 +6,7 @@ import { Object3D } from './core/Object3D';
 import { Camera } from './core/Camera';
 import { World } from './core/World';
 import { Geometry } from './core/Geometry';
+import { loadImage } from './utils';
 
 
 const aspect = window.innerWidth / window.innerHeight;
@@ -15,8 +16,8 @@ let far = 2000;
 const camera = new Camera(fov, aspect, near, far, [0, 1, 0]);
 camera.translation = [0, 2, -10];
 
-const createChairGeometry = async (world: World): Promise<Geometry> => {
-    const obj = await loadObjFile('/models/suzanne.obj');
+const createSuzanneGeometry = async (world: World): Promise<Geometry> => {
+    const obj = await loadObjFile('/models/chair/Chair.obj');
     const geometry = world.createGeometry({
         position: {
             count: 3,
@@ -38,8 +39,8 @@ const createChairGeometry = async (world: World): Promise<Geometry> => {
     return geometry;
 }
 
-const createIcosphereGeometry = async (world: World): Promise<Geometry> => {
-    const obj = await loadObjFile('/models/teapot.obj');
+const createTeapotGeometry = async (world: World): Promise<Geometry> => {
+    const obj = await loadObjFile('/models/suzanne.obj');
 
     const geometry = world.createGeometry({
         position: {
@@ -66,8 +67,11 @@ const createIcosphereGeometry = async (world: World): Promise<Geometry> => {
 async function main() {
     const world = new World().setCamera(camera);
 
-    const icoMaterial = world.createBasicMaterial({ color: [0.4, 0.3, 0.7, 1.0] });
-    const icoGeometry = await createIcosphereGeometry(world);
+    const image = await loadImage('/textures/checker.jpg');
+    const suzanneMaterial = world.createTextureMaterial(image);
+    const teapotMaterial = world.createBasicMaterial({ color: [1, 0.3, 0.7, 1.0] });
+    const teapotGeometry = await createTeapotGeometry(world);
+    const suzanneGeometry = await createSuzanneGeometry(world);
 
     for (let i = 0; i < 12; i++) {
         const angle = i * Math.PI * 2 / 12;
@@ -75,7 +79,7 @@ async function main() {
         const z = Math.sin(angle) * 5;
         const translation: Vec3 = [x, 0, z];
         const rotation: Vec3 = [0, Math.random() * 3, 0];
-        const obj = new Object3D(icoGeometry, icoMaterial);
+        const obj = new Object3D(teapotGeometry, teapotMaterial);
         obj.translation = translation;
         obj.rotation = rotation;
         obj.scale = [0.5, 0.5, 0.5];
@@ -83,17 +87,14 @@ async function main() {
         world.addObject(obj);
     }
 
-    const chairMaterial = world.createBasicMaterial({ color: [1, 0, 0, 1] });
-    const charGeometry = await createChairGeometry(world);
-    const chairObj = new Object3D(charGeometry, chairMaterial);
-    chairObj.scale = [0.5, 0.5, 0.5];
+    const suzanneObj = new Object3D(suzanneGeometry, suzanneMaterial);
 
-    world.addObject(chairObj);
+    world.addObject(suzanneObj);
 
     let a = 0;
     world.render((dt: number, objects) => {
         a += dt / 1000;
-        // camera.translation = [Math.cos(-a) * 10, Math.cos(a) * 4, Math.sin(-a) * 10];
+        camera.translation = [Math.cos(-a) * 2, Math.sin(a) * 4, -10];
         camera.lookAt([0, 0, 0]);
 
         for (const obj of objects) {
