@@ -32,6 +32,10 @@ export class Geometry {
         if (position) {
             this.triangleCount = position.data.length / position.count;
         }
+
+        this.vertexArray = new VertexArray(gl);
+        this.vertexArray.setLayout(this.layout, gl);
+        this.compiled = true;
     }
 
     public getId(): number {
@@ -42,13 +46,4 @@ export class Geometry {
         this.vertexArray?.bind(gl);
     }
 
-    public compile(gl: WebGL2RenderingContext) {
-        if (this.compiled) {
-            throw new Error(`Can't compile geomtry more than once`);
-        }
-
-        this.vertexArray = new VertexArray(gl);
-        this.vertexArray.setLayout(this.layout, gl);
-        this.compiled = true;
-    }
 }

@@ -1,6 +1,16 @@
 import { Vec2, Vec3 } from "../../gl/types/uniform.type";
 
-export type Line = EmptyLine | CommentLine | ObjectLine | VertexLine | VertexNormalLine | VertexTangentLine | FaceRow;
+export type Line = 
+    | EmptyLine
+    | CommentLine
+    | ObjectLine
+    | VertexLine
+    | VertexNormalLine
+    | VertexTangentLine
+    | FaceRow
+    | UseMaterialRow
+    | MaterialFileRow
+    | GroupsRow;
 
 type EmptyLine = {
     type: 'empty';
@@ -37,6 +47,21 @@ type FaceRow = {
     value: number[][];
 }
 
+type UseMaterialRow = {
+    type: 'use-material';
+    value: string;
+}
+
+type MaterialFileRow = {
+    type: 'material-file';
+    value: string;
+}
+
+type GroupsRow = {
+    type: 'groups';
+    value: string[];
+}
+
 export type ObjectFile = {
     name: string;
     offset: Vec3;
@@ -45,4 +70,7 @@ export type ObjectFile = {
         texCoord: number[];
         normal: number[];
     };
+    geometries: any;
+    materialLibs: string[];
+    materials: string[];
 }

@@ -6,7 +6,7 @@ import { Vec4 } from "../../gl/types/uniform.type";
 import { v3 } from "../../math/v3";
 
 export class BasicMaterial extends Material {
-    constructor(config?: { color?: Vec4; }) {
+    constructor(config: { color?: Vec4; }, gl: WebGL2RenderingContext) {
         super({
             vertex: vertShader,
             fragment: fragShader,
@@ -51,6 +51,6 @@ export class BasicMaterial extends Material {
                     value: config?.color ? config.color : [1.0, 1.0, 1.0, 1.0], 
                 },
             }
-        });
+        }, gl);
     }
 }

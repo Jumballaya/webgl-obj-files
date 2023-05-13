@@ -8,6 +8,7 @@ import { GeometryConfig } from "./types/geometry-config.type";
 import { MaterialConfig } from "./types/material-config.type";
 import { BasicMaterial } from "./materials/BasicMaterial";
 import { TextureMaterial } from "./materials/TextureMaterial";
+import { Group } from "./Group";
 
 function makeDefaultCamera(): Camera {
     const defaultFov = 75 * Math.PI / 180;
@@ -60,27 +61,27 @@ export class World {
         }
     }
 
+    public createGroup(geometries: Geometry[], data: Record<string, Uniform>[]): Group {
+       return new Group(geometries, data, this.ctx); 
+    }
+
     public createGeometry(layout: GeometryConfig): Geometry {
         const geo = new Geometry(layout, this.ctx);
-        geo.compile(this.ctx);
         return geo;
     }
 
     public createMaterial(config: MaterialConfig): Material {
-        const mat = new Material(config);
-        mat.compile(this.ctx);
+        const mat = new Material(config, this.ctx);
         return mat;
     }
 
-    public createBasicMaterial(config?: { color?: Vec4; }): Material {
-        const mat = new BasicMaterial(config);
-        mat.compile(this.ctx);
+    public createBasicMaterial(config: { color?: Vec4; }): Material {
+        const mat = new BasicMaterial(config, this.ctx);
         return mat;
     }
 
     public createTextureMaterial(texture: HTMLImageElement): Material {
-        const mat = new TextureMaterial(texture);
-        mat.compile(this.ctx);
+        const mat = new TextureMaterial(texture, this.ctx);
         return mat;
     }
 
@@ -129,11 +130,11 @@ export class World {
 
         for (const obj of this.objects) {
             if (obj.geometry.getId() !== this.lastSeen.geometry) {
-                obj.bindGeometry(this.ctx);
+                obj.bindGeometry(gl);
                 this.lastSeen.geometry = obj.geometry.getId();
             }
             if (obj.material.getId() !== this.lastSeen.material) {
-                obj.bindMaterial(this.ctx);
+                obj.bindMaterial(gl);
                 this.lastSeen.material = obj.material.getId();
             }
 
@@ -150,8 +151,20 @@ export class World {
                 },
             }, gl);
 
-            // Draw object
-            gl.drawArrays(gl.TRIANGLES, 0, obj.geometry.triangleCount);
+            if (obj.geometry instanceof Group) {
+                for (let i = 0; i < obj.geometry.length; i++) {
+                    const geo = obj.geometry.geometry(i);
+                    const uni = obj.geometry.uniforms(i);
+                    if (geo) {
+                        geo.bind(gl);
+                        if (uni) obj.updateUniforms(uni, gl);
+                        gl.drawArrays(gl.TRIANGLES, 0, geo.triangleCount);
+                    }
+                }
+            } else {
+                // Draw object
+                gl.drawArrays(gl.TRIANGLES, 0, obj.geometry.triangleCount);
+            }
         }
     }
 

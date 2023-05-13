@@ -4,7 +4,7 @@ import fragShader from '../../shaders/test/fragment.glsl?raw';
 import vertShader from '../../shaders/test/vertex.glsl?raw';
 
 export class TextureMaterial extends Material {
-    constructor(texture: HTMLImageElement) {
+    constructor(texture: HTMLImageElement, gl: WebGL2RenderingContext) {
         super({
             vertex: vertShader,
             fragment: fragShader,
@@ -30,6 +30,6 @@ export class TextureMaterial extends Material {
                     value: texture,
                 },
             }
-        });
+        }, gl);
     }
 }

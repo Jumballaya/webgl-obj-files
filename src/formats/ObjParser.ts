@@ -4,6 +4,7 @@ import { Line, ObjectFile } from "./types/obj.type";
 
 export async function loadObjFile(path: string): Promise<ObjectFile> {
     const name = path.split('/').at(-1)?.split('.obj')[0] || '';
+    const basePath = path.split(`${name}.obj`)[0];
     const response = await fetch(path);
     const obj = await response.text();
     const lines = obj.split('\n');
@@ -20,11 +21,50 @@ export async function loadObjFile(path: string): Promise<ObjectFile> {
         normals,
     ];
 
-    const webglVertexData: [number[], number[], number[]] = [
+    let webglVertexData: [number[], number[], number[]] = [
         [], // position
         [], // texcoords
         [], // normals
     ]
+
+    const geometries: any[] = [];
+    let geometry: any;
+    let material = 'default';
+    let curObj = 'default';
+    let groups: string[] = [];
+    const materials: Set<string> = new Set();
+    const materialLibs: string[] = [];
+
+    function newGeometry() {
+        if (geometry?.data?.position?.length) {
+            geometry = undefined;
+        }
+        setGeometry();
+    }
+
+    function setGeometry() {
+        if (!geometry) {
+            const position: number[] = [];
+            const texCoord: number[] = [];
+            const normal: number[] = [];
+            webglVertexData = [
+                position,
+                texCoord,
+                normal
+            ];
+            geometry = {
+                material,
+                object: curObj,
+                groups,
+                data: {
+                    position,
+                    texCoord,
+                    normal,
+                },
+            };
+            geometries.push(geometry);
+        }
+    }
 
     function addVertex(vert: number[]) {
         for (let i = 0; i < vert.length; i++) {
@@ -46,12 +86,33 @@ export async function loadObjFile(path: string): Promise<ObjectFile> {
         }
 
         if (line.type === 'face') {
+            setGeometry();
             const numTriangles = line.value.length - 2;
             for (let i = 0; i < numTriangles; i++) {
                 addVertex(line.value[0]);
                 addVertex(line.value[i + 1]);
                 addVertex(line.value[i + 2]);
             }
+        }
+
+        if (line.type === 'use-material') {
+            material = line.value;
+            materials.add(material);
+            newGeometry();
+        }
+
+        if (line.type === 'material-file') {
+            materialLibs.push(`${basePath}${line.value}`);
+        }
+
+        if (line.type === 'object') {
+            curObj = line.value;
+            newGeometry();
+        }
+
+        if (line.type === 'groups') {
+            groups = line.value;            
+            newGeometry();
         }
     }
 
@@ -73,6 +134,9 @@ export async function loadObjFile(path: string): Promise<ObjectFile> {
         name,
         offset,
         data,
+        geometries,
+        materialLibs,
+        materials: Array.from(materials),
     };
 }
 
@@ -82,6 +146,7 @@ function parseObjLine(input: string): Line {
     }
     let cursor = 0;
     switch (input[cursor]) {
+
         case '#': {
             cursor++;
             if (input[cursor] === ' ') cursor++;
@@ -94,6 +159,13 @@ function parseObjLine(input: string): Line {
             if (input[cursor] === ' ') cursor++;
             const objectName = input.slice(cursor, input.length);
             return { type: 'object', value: objectName };
+        }
+
+        case 'g': {
+            cursor++;
+            const groupNames = input.slice(cursor).trim().split(' ');
+            return { type: 'groups', value: groupNames };
+            
         }
 
         case 'v': {
@@ -125,6 +197,26 @@ function parseObjLine(input: string): Line {
             const data = input.slice(cursor, input.length);
             const values = data.split(' ').map(g => g.split('/').map(Number)) as [Vec3, Vec3, Vec3, Vec3];
             return { type: 'face', value: values };
+        }
+
+        case 'u': {
+            const key = input.slice(cursor, cursor + 6);
+            if (key === 'usemtl') {
+                cursor += 6;
+                const value = input.slice(cursor).trim();
+                return { type: 'use-material', value };
+            }
+            return { type: 'empty', value: '\n' }; 
+        }
+
+        case 'm': {
+            const key = input.slice(cursor, cursor + 6);
+            if (key === 'mtllib') {
+                cursor += 6;
+                const value = input.slice(cursor).trim();
+                return { type: 'material-file', value };
+            }
+            return { type: 'empty', value: '\n' }; 
         }
 
         default: {

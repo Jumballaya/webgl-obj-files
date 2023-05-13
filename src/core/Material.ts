@@ -14,8 +14,29 @@ export class Material {
 
     public compiled = false;
 
-    constructor(options: MaterialConfig) {
+    constructor(options: MaterialConfig, gl: WebGL2RenderingContext) {
         this.config = options;
+        if (this.compiled) {
+            throw new Error("Can't recompile materials");
+        }
+        const vertShader = this.createShader(gl, gl.VERTEX_SHADER, this.config.vertex);
+        const fragShader = this.createShader(gl, gl.FRAGMENT_SHADER, this.config.fragment);
+        if (!vertShader || !fragShader) {
+            throw new Error('Unable to compile shaders');
+        }
+
+        this.vertexShader = vertShader;
+        this.fragmentShader = fragShader;
+        const program = this.createProgram(gl, this.vertexShader, this.fragmentShader);
+        if (!program) {
+            throw new Error('Unable to compile material');
+        }
+
+        this.program = program;
+
+        gl.useProgram(program);
+        this.compileUniforms(gl);
+        this.compiled = true;
     }
 
     public getId() {
@@ -40,31 +61,6 @@ export class Material {
            return found.value as T;
        }
        return null;
-    }
-
-
-    public compile(gl: WebGL2RenderingContext) {
-        if (this.compiled) {
-            throw new Error("Can't recompile materials");
-        }
-        const vertShader = this.createShader(gl, gl.VERTEX_SHADER, this.config.vertex);
-        const fragShader = this.createShader(gl, gl.FRAGMENT_SHADER, this.config.fragment);
-        if (!vertShader || !fragShader) {
-            throw new Error('Unable to compile shaders');
-        }
-
-        this.vertexShader = vertShader;
-        this.fragmentShader = fragShader;
-        const program = this.createProgram(gl, this.vertexShader, this.fragmentShader);
-        if (!program) {
-            throw new Error('Unable to compile material');
-        }
-
-        this.program = program;
-
-        gl.useProgram(program);
-        this.compileUniforms(gl);
-        this.compiled = true;
     }
 
     private compileUniforms(gl: WebGL2RenderingContext) {
