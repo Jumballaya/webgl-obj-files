@@ -75,8 +75,8 @@ export class World {
         return mat;
     }
 
-    public createBasicMaterial(config: { color?: Vec4; }): Material {
-        const mat = new BasicMaterial(config, this.ctx);
+    public createBasicMaterial(): Material {
+        const mat = new BasicMaterial(this.ctx);
         return mat;
     }
 
@@ -112,7 +112,7 @@ export class World {
         gl.enable(gl.DEPTH_TEST);
         gl.enable(gl.CULL_FACE);
         gl.viewport(0, 0, canvas.width, canvas.height);
-        gl.clearColor(0.05,0.05,0.05,1);
+        gl.clearColor(1,1,1,1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         const globalUniforms: Record<string, Uniform> = {
@@ -124,6 +124,10 @@ export class World {
                 type: 'mat4',
                 value: camera.projectionMatrix,
             },
+            u_surfaceToView: {
+                type: 'vec3',
+                value: camera.translation,
+            }
 
             // Lighting
         };
@@ -141,10 +145,6 @@ export class World {
             // Object specific Uniforms
             obj.updateUniforms({ 
                 ...globalUniforms,
-                u_world_inversed_transposed: {
-                    type: 'mat4',
-                    value: obj.inverseTransposedMatrix,
-                },
                 u_model_matrix: {
                     type: 'mat4',
                     value: obj.modelMatrix

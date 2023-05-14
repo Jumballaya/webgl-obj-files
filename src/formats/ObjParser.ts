@@ -1,5 +1,7 @@
 import { Vec2, Vec3 } from "../gl/types/uniform.type";
 import { v3 } from "../math/v3";
+import { parseMTL } from "./MtlParser";
+import { ObjMaterial } from "./types/mtl.type";
 import { Line, ObjectFile } from "./types/obj.type";
 
 export async function loadObjFile(path: string): Promise<ObjectFile> {
@@ -32,7 +34,6 @@ export async function loadObjFile(path: string): Promise<ObjectFile> {
     let material = 'default';
     let curObj = 'default';
     let groups: string[] = [];
-    const materials: Set<string> = new Set();
     const materialLibs: string[] = [];
 
     function newGeometry() {
@@ -97,7 +98,6 @@ export async function loadObjFile(path: string): Promise<ObjectFile> {
 
         if (line.type === 'use-material') {
             material = line.value;
-            materials.add(material);
             newGeometry();
         }
 
@@ -130,19 +130,23 @@ export async function loadObjFile(path: string): Promise<ObjectFile> {
         normal: webglVertexData[2],
     };
 
+    const matRes = await fetch(materialLibs[0]);
+    const matTxt = await matRes.text();
+    const materials = parseMTL(matTxt).materials;
+
     return {
         name,
         offset,
         data,
         geometries,
         materialLibs,
-        materials: Array.from(materials),
+        materials,
     };
 }
 
 function parseObjLine(input: string): Line {
     if (input.length <= 0) {
-        return { type: 'empty', value: '\n' }; 
+        return { type: 'empty', value: '\0' }; 
     }
     let cursor = 0;
     switch (input[cursor]) {
@@ -206,7 +210,7 @@ function parseObjLine(input: string): Line {
                 const value = input.slice(cursor).trim();
                 return { type: 'use-material', value };
             }
-            return { type: 'empty', value: '\n' }; 
+            return { type: 'empty', value: '\0' }; 
         }
 
         case 'm': {
@@ -216,11 +220,11 @@ function parseObjLine(input: string): Line {
                 const value = input.slice(cursor).trim();
                 return { type: 'material-file', value };
             }
-            return { type: 'empty', value: '\n' }; 
+            return { type: 'empty', value: '\0' }; 
         }
 
         default: {
-            return { type: 'empty', value: '\n' }; 
+            return { type: 'empty', value: '\0' }; 
         }
     }
 }

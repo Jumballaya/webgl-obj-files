@@ -1,12 +1,11 @@
 import { m4 } from "../../math/m4";
 import { Material } from "../Material";
-import fragShader from '../../shaders/basic/fragment.glsl?raw';
-import vertShader from '../../shaders/basic/vertex.glsl?raw';
-import { Vec4 } from "../../gl/types/uniform.type";
+import fragShader from '../../shaders/obj/fragment.glsl?raw';
+import vertShader from '../../shaders/obj/vertex.glsl?raw';
 import { v3 } from "../../math/v3";
 
 export class BasicMaterial extends Material {
-    constructor(config: { color?: Vec4; }, gl: WebGL2RenderingContext) {
+    constructor(gl: WebGL2RenderingContext) {
         super({
             vertex: vertShader,
             fragment: fragShader,
@@ -25,31 +24,26 @@ export class BasicMaterial extends Material {
                     type: 'mat4',
                     value: m4.identity(),
                 },
-                u_world_inversed_transposed: {
-                    type: 'mat4',
-                    value: m4.identity(),
+                u_ambient_light: {
+                    type: 'vec3',
+                    value: [0.3, 0.3, 0.3],
                 },
-
-                u_ambient_light_color: {
-                    type: 'vec4',
-                    value: [0.3, 0.3, 0.3, 1],
-                },
-                u_ambient_light_intensity: {
-                    type: 'float',
-                    value: 0.5,
-                },
-                u_reverse_directional_light_direction: {
+                u_light_direction: {
                     type: 'vec3',
                     value: v3.normalize([0.5, 0.7, 1.0]),
                 },
-                u_directional_light_color: {
-                    type: 'vec4',
-                    value: [0.3, 0.3, 0.3, 1],
+                u_surfaceToView: {
+                    type: 'vec3',
+                    value: [0,0, -2],
                 },
-                u_albedo: {
-                    type: 'vec4',
-                    value: config?.color ? config.color : [1.0, 1.0, 1.0, 1.0], 
-                },
+
+                u_shininess: { type: 'float', value: 0 },
+                u_ambient: { type: 'vec3', value: [0.3, 0.3, 0.3] },
+                u_diffuse: { type: 'vec3', value:  [0.3, 0.3, 0.3 ]},
+                u_specular: { type: 'vec3', value: [0.3, 0.3, 0.3] },
+                u_emissive: { type: 'vec3', value: [0.3, 0.3, 0.3] },
+                u_opacity: { type: 'float', value: 100 },
+                u_albedo: { type: 'vec3', value: [Math.random(), Math.random(), Math.random()] }
             }
         }, gl);
     }

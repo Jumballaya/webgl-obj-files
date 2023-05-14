@@ -73,7 +73,7 @@ export class Material {
             const uniform = uniforms[uName];
             const location = gl.getUniformLocation(this.program, uName);
             if (!location) {
-                throw new Error('Unable to get uniform location');
+                throw new Error(`Unable to get uniform location: ${uName}`);
             }
             const withPtr: UniformWithPointer = { ...uniform, location };
             this.setUniform(withPtr, gl);

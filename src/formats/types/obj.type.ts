@@ -1,4 +1,5 @@
 import { Vec2, Vec3 } from "../../gl/types/uniform.type";
+import { MtlFile, ObjMaterial } from "./mtl.type";
 
 export type Line = 
     | EmptyLine
@@ -14,7 +15,7 @@ export type Line =
 
 type EmptyLine = {
     type: 'empty';
-    value: '\n';
+    value: '\0';
 };
 
 type CommentLine = {
@@ -72,5 +73,5 @@ export type ObjectFile = {
     };
     geometries: any;
     materialLibs: string[];
-    materials: string[];
+    materials: Record<string, ObjMaterial>;
 }
