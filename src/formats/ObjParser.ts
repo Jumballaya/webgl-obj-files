@@ -4,6 +4,18 @@ import { parseMTL } from "./MtlParser";
 import { ObjMaterial } from "./types/mtl.type";
 import { Line, ObjectFile } from "./types/obj.type";
 
+type Geo = {
+    material: string;
+    object: string;
+    groups: string[],
+    data: {
+        position: number[],
+        texCoord: number[],
+        normal: number[],
+        color: number[],
+    };
+}
+
 export async function loadObjFile(path: string): Promise<ObjectFile> {
     const name = path.split('/').at(-1)?.split('.obj')[0] || '';
     const basePath = path.split(`${name}.obj`)[0];
@@ -29,12 +41,12 @@ export async function loadObjFile(path: string): Promise<ObjectFile> {
         [], // normals
     ]
 
-    const geometries: any[] = [];
-    let geometry: any;
+    const geometries: Geo[] = [];
     let material = 'default';
     let curObj = 'default';
-    let groups: string[] = [];
+    let groups: string[] = ['default'];
     const materialLibs: string[] = [];
+    let geometry: Geo | undefined;
 
     function newGeometry() {
         if (geometry?.data?.position?.length) {
@@ -48,10 +60,11 @@ export async function loadObjFile(path: string): Promise<ObjectFile> {
             const position: number[] = [];
             const texCoord: number[] = [];
             const normal: number[] = [];
+            const color: number[] = [];
             webglVertexData = [
                 position,
                 texCoord,
-                normal
+                normal,
             ];
             geometry = {
                 material,
@@ -61,6 +74,7 @@ export async function loadObjFile(path: string): Promise<ObjectFile> {
                     position,
                     texCoord,
                     normal,
+                    color,
                 },
             };
             geometries.push(geometry);
@@ -85,6 +99,9 @@ export async function loadObjFile(path: string): Promise<ObjectFile> {
         if (line.type === 'vertex-texture') {
             texCoords.push(line.value);
         }
+        if (line.type === 'material-file') {
+            materialLibs.push(`${basePath}${line.value}`);
+        }
 
         if (line.type === 'face') {
             setGeometry();
@@ -95,21 +112,16 @@ export async function loadObjFile(path: string): Promise<ObjectFile> {
                 addVertex(line.value[i + 2]);
             }
         }
-
         if (line.type === 'use-material') {
             material = line.value;
+            if (geometry) geometry.material = material;
             newGeometry();
         }
-
-        if (line.type === 'material-file') {
-            materialLibs.push(`${basePath}${line.value}`);
-        }
-
         if (line.type === 'object') {
             curObj = line.value;
+            if (geometry) geometry.material = material;
             newGeometry();
         }
-
         if (line.type === 'groups') {
             groups = line.value;            
             newGeometry();
@@ -124,20 +136,20 @@ export async function loadObjFile(path: string): Promise<ObjectFile> {
         -1,
     );
 
-    const data = {
-        position: webglVertexData[0],
-        texCoord: webglVertexData[1],
-        normal: webglVertexData[2],
-    };
+    const materialsList = await Promise.all(materialLibs.map(async (lib) => {
+        const matRes = await fetch(lib);
+        const matTxt = await matRes.text();
+        return parseMTL(matTxt, basePath);
+    }));
 
-    const matRes = await fetch(materialLibs[0]);
-    const matTxt = await matRes.text();
-    const materials = parseMTL(matTxt).materials;
+    const materials: Record<string, ObjMaterial> = {};
+    for (const mat of materialsList) {
+        Object.assign(materials, mat); 
+    }
 
     return {
         name,
         offset,
-        data,
         geometries,
         materialLibs,
         materials,

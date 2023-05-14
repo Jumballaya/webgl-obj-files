@@ -1,32 +1,20 @@
-import { Uniform } from "../gl/types/uniform.type";
-import { Geometry } from "./Geometry";
+import { Object3D } from "./Object3D";
 
 
-export class Group extends Geometry {
+export class Group extends Object3D {
 
-    private data: Array<Record<string, Uniform>> = [];
-    private geometries: Array<Geometry> = [];
+    private childList: Array<Object3D> = [];
 
-    constructor(geometries: Geometry[], data: Array<Record<string, Uniform>>, gl: WebGL2RenderingContext) {
-        super({}, gl);
-
-        for (let i = 0; i < geometries.length; i++) {
-            const geo = geometries[i];
-            const uni = data[i];
-            this.data.push(uni);
-            this.geometries.push(geo);
-        }
+    constructor(children: Array<Object3D>) {
+        super(children[0].geometry, children[0].material);
+        this.childList = children.slice(1);
     }
 
     get length(): number {
-        return this.geometries.length;
+        return this.children.length;
     }
 
-    public geometry(idx: number): Geometry | null {
-        return this.geometries[idx] || null;
-    }
-
-    public uniforms(idx: number): Record<string, Uniform> | null {
-       return this.data[idx]|| null;
+    get children(): Array<Object3D> {
+        return this.childList;
     }
 }

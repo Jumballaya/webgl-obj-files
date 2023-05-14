@@ -1,4 +1,4 @@
-import { Uniform, Vec3, Vec4 } from "../gl/types/uniform.type";
+import { Uniform, Vec3 } from "../gl/types/uniform.type";
 import { m4 } from "../math/m4";
 import { Camera } from "./Camera";
 import { Geometry } from "./Geometry";
@@ -6,8 +6,6 @@ import { Material } from "./Material";
 import { Object3D } from "./Object3D";
 import { GeometryConfig } from "./types/geometry-config.type";
 import { MaterialConfig } from "./types/material-config.type";
-import { BasicMaterial } from "./materials/BasicMaterial";
-import { TextureMaterial } from "./materials/TextureMaterial";
 import { Group } from "./Group";
 
 function makeDefaultCamera(): Camera {
@@ -28,11 +26,6 @@ export class World {
 
     private running = true;
     private time: number = Date.now();
-
-    private lastSeen = {
-        geometry: -1,
-        material: -1,
-    };
 
     constructor() {
         const [width, height] = [window.innerWidth, window.innerHeight];
@@ -61,8 +54,8 @@ export class World {
         }
     }
 
-    public createGroup(geometries: Geometry[], data: Record<string, Uniform>[]): Group {
-       return new Group(geometries, data, this.ctx); 
+    public createGroup(data: Array<Object3D>): Group {
+       return new Group(data); 
     }
 
     public createGeometry(layout: GeometryConfig): Geometry {
@@ -72,16 +65,6 @@ export class World {
 
     public createMaterial(config: MaterialConfig): Material {
         const mat = new Material(config, this.ctx);
-        return mat;
-    }
-
-    public createBasicMaterial(): Material {
-        const mat = new BasicMaterial(this.ctx);
-        return mat;
-    }
-
-    public createTextureMaterial(texture: HTMLImageElement): Material {
-        const mat = new TextureMaterial(texture, this.ctx);
         return mat;
     }
 
@@ -107,7 +90,6 @@ export class World {
     private renderFrame() {
         const gl = this.ctx;
         const canvas = this.canvas;
-        const camera = this.camera;
 
         gl.enable(gl.DEPTH_TEST);
         gl.enable(gl.CULL_FACE);
@@ -115,7 +97,16 @@ export class World {
         gl.clearColor(1,1,1,1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        const globalUniforms: Record<string, Uniform> = {
+        for (const obj of this.objects) {
+            this.renderObject(obj);
+        }
+    }
+
+    private renderObject(obj: Object3D) {
+        const gl = this.ctx;
+        const camera = this.camera;
+
+        const uniforms: Record<string, Uniform> = {
             'u_view_matrix': {
                 type: 'mat4',
                 value: m4.inverse(camera.cameraMatrix),
@@ -127,43 +118,21 @@ export class World {
             u_surfaceToView: {
                 type: 'vec3',
                 value: camera.translation,
-            }
-
-            // Lighting
+            },
+            u_model_matrix: {
+                type: 'mat4',
+                value: obj.modelMatrix
+            },
         };
 
-        for (const obj of this.objects) {
-            if (obj.geometry.getId() !== this.lastSeen.geometry) {
-                obj.bindGeometry(gl);
-                this.lastSeen.geometry = obj.geometry.getId();
-            }
-            if (obj.material.getId() !== this.lastSeen.material) {
-                obj.bindMaterial(gl);
-                this.lastSeen.material = obj.material.getId();
-            }
+        obj.bindGeometry(gl);
+        obj.bindMaterial(gl)
+        obj.updateUniforms(uniforms, gl);
+        gl.drawArrays(gl.TRIANGLES, 0, obj.geometry.triangleCount);
 
-            // Object specific Uniforms
-            obj.updateUniforms({ 
-                ...globalUniforms,
-                u_model_matrix: {
-                    type: 'mat4',
-                    value: obj.modelMatrix
-                },
-            }, gl);
-
-            if (obj.geometry instanceof Group) {
-                for (let i = 0; i < obj.geometry.length; i++) {
-                    const geo = obj.geometry.geometry(i);
-                    const uni = obj.geometry.uniforms(i);
-                    if (geo) {
-                        geo.bind(gl);
-                        if (uni) obj.updateUniforms(uni, gl);
-                        gl.drawArrays(gl.TRIANGLES, 0, geo.triangleCount);
-                    }
-                }
-            } else {
-                // Draw object
-                gl.drawArrays(gl.TRIANGLES, 0, obj.geometry.triangleCount);
+        if (obj instanceof Group) {
+            for (const child of obj.children) {
+                this.renderObject(child);
             }
         }
     }

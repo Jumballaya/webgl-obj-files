@@ -17,7 +17,6 @@ uniform float u_opacity;
 
 uniform vec3 u_ambient_light;
 uniform vec3 u_light_direction;
-uniform vec3 u_albedo;
 
 void main() {
     vec3 normal = normalize(v_normal);
@@ -28,12 +27,11 @@ void main() {
     float fakeLight = dot(normal, u_light_direction) * 0.5 + 0.5;
     float specularLight = clamp(dot(normal, halfVector), 0.0, 1.0);
 
-    vec3 effectiveDiffuse = u_diffuse * u_albedo.rgb;
      
     outColor = vec4(
-        u_emissive +
-        u_ambient * u_ambient_light +
-        effectiveDiffuse * fakeLight +
-        u_specular * pow(specularLight, u_shininess),
-        u_opacity * 100.0);
+        (u_emissive) +
+        (u_ambient * u_ambient_light * 0.25) +
+        (u_diffuse * fakeLight) +
+        (u_specular * pow(specularLight, u_shininess)),
+        u_opacity);
 }

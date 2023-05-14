@@ -1,14 +1,18 @@
 import { loadObjFile } from './formats/ObjParser';
 import './style.css'
 
+import vertShader from './shaders/obj/vertex.glsl?raw';
+import fragShader from './shaders/obj/fragment.glsl?raw';
+
 import { Object3D } from './core/Object3D';
 import { Camera } from './core/Camera';
 import { World } from './core/World';
 import { Geometry } from './core/Geometry';
 import { Group } from './core/Group';
-import { Uniform, Vec3 } from './gl/types/uniform.type';
 import { v3 } from './math/v3';
 import { ObjMaterial } from './formats/types/mtl.type';
+import { Material } from './core/Material';
+import { Uniform } from './gl/types/uniform.type';
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -19,34 +23,62 @@ let far = 2000;
 const camera = new Camera(fov, aspect, near, far, [0, 1, 0]);
 camera.translation = [0, 4, -8];
 
-const createMaterialUniforms = (mat: ObjMaterial, albedo?: Vec3): Record<string, Uniform> => {
-    return {
+
+const defaultImage = (): Promise<HTMLImageElement> => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 2;
+    canvas.height = 2;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 2, 2);
+    const src = canvas.toDataURL();
+    const img = new Image();
+    return new Promise(res => {
+        img.src = src;
+        img.addEventListener('load', () => res(img));
+    });
+} 
+
+const loadTexture = (path: string): Promise<HTMLImageElement> => {
+    const img = new Image();
+    return new Promise(res => {
+        img.src = path;
+        img.addEventListener('load', () => res(img));
+        img.addEventListener('error', async () => {
+           res(await defaultImage()); 
+        });
+    });
+}
+
+const createMaterial = async (mat: ObjMaterial, world: World): Promise<Material> => {
+    const unis: Record<string, Uniform> = {
         u_shininess: { type: 'float', value: mat.shininess },
         u_ambient: { type: 'vec3', value: mat.ambient },
         u_diffuse: { type: 'vec3', value: mat.diffuse },
         u_specular: { type: 'vec3', value: mat.specular },
         u_emissive: { type: 'vec3', value: mat.emissive },
         u_opacity: { type: 'float', value: mat.opacity },
-        u_albedo: { type: 'vec3', value: albedo ? albedo : [Math.random(),Math.random(),Math.random()] }
-    } 
+
+        //u_map_diffuse: { type: 'sampler2D', value: await loadTexture(mat.textures.diffuse || '') },
+        //u_map_specular: { type: 'sampler2D', value: await loadTexture(mat.textures.specular || '') },
+        //u_map_bump: { type: 'sampler2D', value: await loadTexture(mat.textures.bump || '') },
+    };
+    return world.createMaterial({
+        vertex: vertShader,
+        fragment: fragShader,
+        uniforms: unis,
+    });
 }
 
 const createChairGeometry = async (world: World): Promise<Group> => {
     const obj = await loadObjFile(`${BASE}models/windmill/windmill.obj`);
-    console.log(obj);
+    const data: Object3D[] = [];
+    const materials: Record<string, Material> = {};
+    for await (const k of Object.keys(obj.materials)) {
+        const materialObjData = obj.materials[k];
+        materials[k] = await createMaterial(materialObjData, world);
+    }
 
-    const colors: Record<string, Vec3> = {
-        'Object_7_Mesh_4': [1.0, 1.0, 1.0], // back bar and side-lever
-        'Object_6_Mesh_3': [1.0, 1.0, 1.0], // Square in seat-back
-        'Object_10_Mesh_7': [1.0, 1.0, 1.0], // rings on arms
-        'Object_11_Mesh_8': [0.0, 0.0, 0.0], // Arms
-        'Object_12_Mesh_9': [0.2, 0.7, 0.9], // Seat cushion
-        'Object_13_Mesh_10': [1.0, 1.0, 1.0],
-
-    };
-
-    const geometries: Geometry[] = [];
-    const data: Record<string, Uniform>[] = [];
     for (const geo of obj.geometries) {
         const geometry = world.createGeometry({
             position: {
@@ -64,28 +96,25 @@ const createChairGeometry = async (world: World): Promise<Group> => {
                 type: 'float',
                 data: geo.data.normal,
             },
+            color: {
+                count: 4,
+                type: 'float',
+                data: new Array(geo.data.normal).fill(Math.random()),
+            }
         });
-        geometries.push(geometry);
-        const matName =  geo.material;
-        const material = obj.materials[matName];
-        if (material) {
-            console.log(geo.object)
-            data.push(createMaterialUniforms(material, colors[geo.object]));
-        } else {
-            data.push({});
-        }
+        geometry.translation = v3.mulScalar(obj.offset, 0.75);
+        const material = materials[geo.material];
+        data.push(new Object3D(geometry, material));
     }
-    const group = world.createGroup(geometries, data);
-    group.translation = v3.mulScalar(obj.offset, 0.75);;
+    const group = world.createGroup(data);
+    console.log(group);
     return group;
 }
 
 async function main() {
     const world = new World().setCamera(camera);
-    const chairMaterial = world.createBasicMaterial();
-    const chairGeometry = await createChairGeometry(world);
-
-    const suzanneObj = new Object3D(chairGeometry, chairMaterial);
+    const chairGroup = await createChairGeometry(world);
+    const suzanneObj = chairGroup;
 
     world.addObject(suzanneObj);
 

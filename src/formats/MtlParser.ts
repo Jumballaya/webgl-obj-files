@@ -1,7 +1,7 @@
-import { MTLLine, MtlFile, ObjMaterial } from "./types/mtl.type";
+import { MTLLine, ObjMaterial } from "./types/mtl.type";
 
 
-export function parseMTL(text: string): MtlFile {
+export function parseMTL(text: string, basePath: string): Record<string, ObjMaterial> {
     const lines = text.split('\n');
     const parsedLines = lines.map(parseMtlLine);
 
@@ -38,7 +38,7 @@ export function parseMTL(text: string): MtlFile {
             materials[curMaterial].emissive = line.value;
             continue;
        }
-       if (line.type === 'dissolve') {
+       if (line.type === 'opacity') {
             materials[curMaterial].opacity = line.value;
             continue;
        }
@@ -46,11 +46,18 @@ export function parseMTL(text: string): MtlFile {
             materials[curMaterial].illum = line.value;
             continue;
        }
+       if (line.type === 'map-diffuse') {
+           materials[curMaterial].textures.diffuse = `${basePath}${line.value}`;
+       }
+       if (line.type === 'map-specular') {
+           materials[curMaterial].textures.specular = `${basePath}${line.value}`;
+       }
+       if (line.type === 'map-bump') {
+           materials[curMaterial].textures.bump = `${basePath}${line.value}`;
+       }
     }
 
-    return {
-        materials,
-    }
+    return materials;
 }
 
 function newMaterial(): ObjMaterial {
@@ -63,6 +70,7 @@ function newMaterial(): ObjMaterial {
         opticalDensity: 1,
         opacity: 1,
         illum: 1,
+        textures: {},
     }
 }
 
@@ -92,7 +100,7 @@ function parseMtlLine(input: string): MTLLine {
         case 'd': {
             cursor++;
             const d = parseFloat(input.slice(cursor).trim());
-            return { type: 'dissolve', value: d };
+            return { type: 'opacity', value: d };
         }
 
         case 'i': {
@@ -165,6 +173,21 @@ function parseMtlLine(input: string): MTLLine {
                         value: [numbers[0], numbers[1], numbers[2]],
                     }
                 }
+            }
+            return { type: 'empty', value: '\0' };
+        }
+
+
+        case 'm': {
+            const [key, value] = input.split(' ');
+            if (key === 'map_Kd') {
+                return { type: 'map-diffuse', value };
+            }
+            if (key === 'map_Ns') {
+                return { type: 'map-specular', value };
+            }
+            if (key === 'map_Bump') {
+                return { type: 'map-bump', value };
             }
             return { type: 'empty', value: '\0' };
         }

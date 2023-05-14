@@ -75,7 +75,7 @@ export class Object3D {
 
     public updateUniforms(uniforms: Record<string, Uniform>, gl: WebGL2RenderingContext) {
         for (const [k, u] of Object.entries(uniforms)) {
-           this.update(k, u, gl); 
+            this.update(k, u, gl);
         }
     }
 

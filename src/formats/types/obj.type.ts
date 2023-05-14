@@ -66,11 +66,6 @@ type GroupsRow = {
 export type ObjectFile = {
     name: string;
     offset: Vec3;
-    data: {
-        position: number[];
-        texCoord: number[];
-        normal: number[];
-    };
     geometries: any;
     materialLibs: string[];
     materials: Record<string, ObjMaterial>;

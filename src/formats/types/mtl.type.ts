@@ -10,8 +10,11 @@ export type MTLLine =
     | SpecColorLine
     | EmissiveColorLine
     | OpticalDensityLine
-    | DissolveLine
-    | IllumLine;
+    | OpacityLine
+    | IllumLine
+    | DiffuseMapLine
+    | SpecularMapLine
+    | BumpMapLine;
 
 export type EmptyLine = {
     type: 'empty';
@@ -58,8 +61,8 @@ export type OpticalDensityLine = {
     value: number;
 };
 
-export type DissolveLine = {
-    type: 'dissolve';
+export type OpacityLine = {
+    type: 'opacity';
     value: number;
 }
 
@@ -67,6 +70,21 @@ export type IllumLine = {
     type: 'illum';
     value: number;
 };
+
+export type DiffuseMapLine = {
+    type: 'map-diffuse';
+    value: string;
+}
+
+export type SpecularMapLine = {
+    type: 'map-specular';
+    value: string;
+}
+
+export type BumpMapLine = {
+    type: 'map-bump';
+    value: string;
+}
 
 export type ObjMaterial = {
     shininess: number;
@@ -77,9 +95,9 @@ export type ObjMaterial = {
     opticalDensity: number;
     opacity: number;
     illum: number;
+    textures: {
+        diffuse?: string;
+        specular?: string;
+        bump?: string;
+    };
 }
-
-export type MtlFile = {
-    materials: Record<string, ObjMaterial>;
-}
-
