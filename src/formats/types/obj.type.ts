@@ -1,5 +1,5 @@
 import { Vec2, Vec3 } from "../../gl/types/uniform.type";
-import { MtlFile, ObjMaterial } from "./mtl.type";
+import { ObjMaterial } from "./mtl.type";
 
 export type Line = 
     | EmptyLine

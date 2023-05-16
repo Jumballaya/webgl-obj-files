@@ -6,8 +6,6 @@ let nextId = 0;
 export class Material {
     private id = nextId++;
 
-    private vertexShader: WebGLShader | null = null;
-    private fragmentShader: WebGLShader | null = null;
     public program: WebGLProgram | null = null;
     private uniforms: Map<string, UniformWithPointer> = new Map();
     private config: MaterialConfig;
@@ -25,9 +23,7 @@ export class Material {
             throw new Error('Unable to compile shaders');
         }
 
-        this.vertexShader = vertShader;
-        this.fragmentShader = fragShader;
-        const program = this.createProgram(gl, this.vertexShader, this.fragmentShader);
+        const program = this.createProgram(gl, vertShader, fragShader);
         if (!program) {
             throw new Error('Unable to compile material');
         }
@@ -182,7 +178,11 @@ export class Material {
         gl.linkProgram(program);
 
         const success = gl.getProgramParameter(program, gl.LINK_STATUS);
-        if (success) return program;
+        if (success) {
+            gl.deleteShader(vertexShader);
+            gl.deleteShader(fragmentShader);
+            return program;
+        }
 
         console.log(gl.getProgramInfoLog(program));
         gl.deleteProgram(program);

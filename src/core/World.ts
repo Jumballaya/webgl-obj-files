@@ -90,21 +90,12 @@ export class World {
     private renderFrame() {
         const gl = this.ctx;
         const canvas = this.canvas;
+        const camera = this.camera;
 
         gl.enable(gl.DEPTH_TEST);
         gl.enable(gl.CULL_FACE);
         gl.viewport(0, 0, canvas.width, canvas.height);
         gl.clearColor(1,1,1,1);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        for (const obj of this.objects) {
-            this.renderObject(obj);
-        }
-    }
-
-    private renderObject(obj: Object3D) {
-        const gl = this.ctx;
-        const camera = this.camera;
 
         const uniforms: Record<string, Uniform> = {
             'u_view_matrix': {
@@ -119,20 +110,29 @@ export class World {
                 type: 'vec3',
                 value: camera.translation,
             },
-            u_model_matrix: {
-                type: 'mat4',
-                value: obj.modelMatrix
-            },
         };
 
+        for (const obj of this.objects) {
+            this.renderObject(obj, uniforms);
+        }
+    }
+
+    private renderObject(obj: Object3D, uniforms: Record<string, Uniform>) {
+        const gl = this.ctx;
         obj.bindGeometry(gl);
         obj.bindMaterial(gl)
         obj.updateUniforms(uniforms, gl);
+        obj.updateUniforms({
+            u_model_matrix: {
+                type: 'mat4',
+                value: obj.modelMatrix,
+            }
+        }, gl);
         gl.drawArrays(gl.TRIANGLES, 0, obj.geometry.triangleCount);
 
         if (obj instanceof Group) {
             for (const child of obj.children) {
-                this.renderObject(child);
+                this.renderObject(child, uniforms);
             }
         }
     }
